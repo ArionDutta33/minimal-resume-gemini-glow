@@ -1,18 +1,24 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Settings, Zap } from 'lucide-react';
 import { ResumeData, TemplateType } from '@/types/resume';
+import { UserPreferences } from '@/types/preferences';
 import ResumeForm from '@/components/ResumeForm';
 import ResumePreview from '@/components/ResumePreview';
 import TemplateSelector from '@/components/TemplateSelector';
 import AIAssistant from '@/components/AIAssistant';
+import PreferencesWizard from '@/components/PreferencesWizard';
 import { generatePDF } from '@/utils/pdfGenerator';
+import { loadPreferences, savePreferences, hasPreferences } from '@/utils/preferencesStorage';
+import { autofillResumeFromPreferences } from '@/utils/autofillResume';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('modern');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPreferencesWizard, setShowPreferencesWizard] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const { toast } = useToast();
 
   const [resumeData, setResumeData] = useState<ResumeData>({
@@ -29,6 +35,11 @@ const Index = () => {
     education: [],
     skills: [],
   });
+
+  useEffect(() => {
+    const preferences = loadPreferences();
+    setUserPreferences(preferences);
+  }, []);
 
   const handleDownloadPDF = async () => {
     if (!resumeData.personalInfo.fullName.trim()) {
@@ -59,6 +70,28 @@ const Index = () => {
     }
   };
 
+  const handlePreferencesComplete = (preferences: UserPreferences) => {
+    savePreferences(preferences);
+    setUserPreferences(preferences);
+    setShowPreferencesWizard(false);
+    
+    toast({
+      title: "Preferences Saved!",
+      description: "Your preferences have been saved successfully.",
+    });
+  };
+
+  const handleAutofill = () => {
+    if (userPreferences) {
+      const autofilledData = autofillResumeFromPreferences(userPreferences, resumeData);
+      setResumeData(autofilledData);
+      toast({
+        title: "Autofilled!",
+        description: "Resume has been populated with your preferences.",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-stone-50 to-orange-50">
       {/* Header */}
@@ -69,14 +102,34 @@ const Index = () => {
               <FileText className="w-8 h-8 text-amber-600 mr-3" />
               <h1 className="text-2xl font-bold text-stone-900">AI Resume Builder</h1>
             </div>
-            <Button
-              onClick={handleDownloadPDF}
-              disabled={isGeneratingPDF}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {isGeneratingPDF ? 'Generating...' : 'Download PDF'}
-            </Button>
+            <div className="flex items-center gap-3">
+              {userPreferences && (
+                <Button
+                  onClick={handleAutofill}
+                  variant="outline"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Autofill
+                </Button>
+              )}
+              <Button
+                onClick={() => setShowPreferencesWizard(true)}
+                variant="outline"
+                className="border-stone-300"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                {userPreferences ? 'Edit Preferences' : 'Setup Preferences'}
+              </Button>
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {isGeneratingPDF ? 'Generating...' : 'Download PDF'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -108,6 +161,15 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Preferences Wizard Modal */}
+      {showPreferencesWizard && (
+        <PreferencesWizard
+          onComplete={handlePreferencesComplete}
+          onCancel={() => setShowPreferencesWizard(false)}
+          existingPreferences={userPreferences}
+        />
+      )}
     </div>
   );
 };
