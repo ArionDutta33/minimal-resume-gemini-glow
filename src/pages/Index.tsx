@@ -6,6 +6,7 @@ import { ResumeData, TemplateType } from '@/types/resume';
 import ResumeForm from '@/components/ResumeForm';
 import ResumePreview from '@/components/ResumePreview';
 import TemplateSelector from '@/components/TemplateSelector';
+import AIAssistant from '@/components/AIAssistant';
 import { generatePDF } from '@/utils/pdfGenerator';
 import { useToast } from '@/hooks/use-toast';
 
@@ -88,14 +89,18 @@ const Index = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Form Section */}
-          <div className="space-y-6">
+          <div className="xl:col-span-2 space-y-6">
             <ResumeForm resumeData={resumeData} onDataChange={setResumeData} />
           </div>
 
-          {/* Preview Section */}
-          <div className="lg:sticky lg:top-8 h-fit">
+          {/* Right Sidebar */}
+          <div className="space-y-6">
+            {/* AI Assistant */}
+            <AIAssistant resumeData={resumeData} onDataChange={setResumeData} />
+            
+            {/* Preview Section */}
             <div className="bg-white rounded-lg border border-stone-200 p-4">
               <h3 className="text-lg font-medium text-stone-800 mb-4">Live Preview</h3>
               <ResumePreview resumeData={resumeData} template={selectedTemplate} />
